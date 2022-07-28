@@ -12,6 +12,8 @@ pub const Lexer = struct {
     readPosition: usize,
     char: ?u8,
 
+    const Self = @This();
+
     pub fn new(input: []const u8) Lexer {
         var lexer = Lexer{
             .input = input,
@@ -24,7 +26,7 @@ pub const Lexer = struct {
         return lexer;
     }
 
-    pub fn nextToken(self: *Lexer) token.Token {
+    pub fn nextToken(self: *Self) token.Token {
         self.skipWhitespace();
 
         const parsedToken = self.resolveNextToken();
@@ -32,7 +34,7 @@ pub const Lexer = struct {
         return parsedToken;
     }
 
-    fn resolveNextToken(self: *Lexer) token.Token {
+    fn resolveNextToken(self: *Self) token.Token {
         if (self.charIs('=')) {
             if (self.peekCharIs('=')) {
                 self.readChar();
@@ -116,7 +118,7 @@ pub const Lexer = struct {
         }
     }
 
-    fn charIs(self: Lexer, expected: u8) bool {
+    fn charIs(self: Self, expected: u8) bool {
         if (self.char) |char| {
             return char == expected;
         } else {
@@ -124,7 +126,7 @@ pub const Lexer = struct {
         }
     }
 
-    fn peekCharIs(self: Lexer, expected: u8) bool {
+    fn peekCharIs(self: Self, expected: u8) bool {
         if (self.peekChar()) |peekCh| {
             return peekCh == expected;
         } else {
@@ -140,13 +142,13 @@ pub const Lexer = struct {
         return char >= '0' and char <= '9';
     }
 
-    fn readChar(self: *Lexer) void {
+    fn readChar(self: *Self) void {
         self.char = self.peekChar();
         self.position = self.readPosition;
         self.readPosition += 1;
     }
 
-    fn peekChar(self: Lexer) ?u8 {
+    fn peekChar(self: Self) ?u8 {
         if (self.readPosition >= self.input.len) {
             return null;
         } else {
@@ -154,11 +156,11 @@ pub const Lexer = struct {
         }
     }
 
-    fn readRange(self: Lexer, start: usize, end: usize) []const u8 {
+    fn readRange(self: Self, start: usize, end: usize) []const u8 {
         return self.input[start..end];
     }
 
-    fn readIdentifier(self: *Lexer) []const u8 {
+    fn readIdentifier(self: *Self) []const u8 {
         const prevPosition = self.position;
         while (true) {
             if (self.char) |char| {
@@ -174,7 +176,7 @@ pub const Lexer = struct {
         return self.readRange(prevPosition, self.position);
     }
 
-    fn readNumber(self: *Lexer) []const u8 {
+    fn readNumber(self: *Self) []const u8 {
         const prevPosition = self.position;
         while (true) {
             if (self.char) |char| {
@@ -190,7 +192,7 @@ pub const Lexer = struct {
         return self.readRange(prevPosition, self.position);
     }
 
-    fn readString(self: *Lexer) []const u8 {
+    fn readString(self: *Self) []const u8 {
         const prevPosition = self.position + 1;
         while (true) {
             self.readChar();
@@ -205,7 +207,7 @@ pub const Lexer = struct {
         return self.readRange(prevPosition, self.position);
     }
 
-    fn skipWhitespace(self: *Lexer) void {
+    fn skipWhitespace(self: *Self) void {
         while (true) {
             if (self.char) |char| {
                 switch (char) {
