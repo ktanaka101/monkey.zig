@@ -1,4 +1,47 @@
-pub const Token = union(enum) {
+pub const TokenTag = enum {
+    illegal,
+    eof,
+
+    // an identifier, a literal
+    ident,
+    int,
+    stringLiteral,
+
+    // operators
+    assign,
+    plus,
+    minus,
+    bang,
+    asterisk,
+    slash,
+    equal,
+    notEqual,
+    lt,
+    gt,
+
+    // delimiters
+    comma,
+    semicolon,
+    colon,
+    lparen,
+    rparen,
+    lbrace,
+    rbrace,
+    lbracket,
+    rbracket,
+
+    // keywords
+    function,
+    let,
+    true_,
+    false_,
+    if_,
+    else_,
+    return_,
+    macro,
+};
+
+pub const Token = union(TokenTag) {
     illegal: u8,
     eof: void,
 
