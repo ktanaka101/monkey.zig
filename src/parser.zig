@@ -3,7 +3,7 @@ const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
-const String = @import("core/string.zig").String;
+const String = @import("string").String;
 
 const Token = @import("token.zig").Token;
 const TokenTag = @import("token.zig").TokenTag;

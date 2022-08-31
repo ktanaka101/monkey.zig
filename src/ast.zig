@@ -1,5 +1,5 @@
 const std = @import("std");
-const String = @import("core/string.zig").String;
+const String = @import("string").String;
 
 // Root AST
 pub const Program = struct {
