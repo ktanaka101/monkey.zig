@@ -6,11 +6,11 @@ pub const Node = union(enum) {
     statement: *Statement,
     expression: *Expression,
 
-    pub fn toString(self: Node, buf: *String) !void {
-        return switch (self) {
-            .program => try self.program.toString(buf),
-            .statement => try self.statement.toString(buf),
-            .expression => try self.expression.toString(buf),
+    pub fn toString(self: *Node, buf: *String) !void {
+        return switch (self.*) {
+            .program => |*program| try program.*.toString(buf),
+            .statement => |*statement| try statement.*.toString(buf),
+            .expression => |*expression| try expression.*.toString(buf),
         };
     }
 };
@@ -19,9 +19,10 @@ pub const Node = union(enum) {
 pub const Program = struct {
     statements: std.ArrayList(Statement),
 
-    pub fn toString(self: Program, buf: *String) !void {
-        for (self.statements.items) |statement| {
-            try statement.toString(buf);
+    pub fn toString(self: *Program, buf: *String) !void {
+        var i: usize = 0;
+        while (i < self.statements.items.len) : (i += 1) {
+            try self.statements.items[i].toString(buf);
         }
     }
 };
@@ -32,9 +33,9 @@ pub const Statement = union(enum) {
     return_: Return,
     expressionStatement: ExpressionStatement,
 
-    pub fn toString(self: Statement, buf: *String) String.Error!void {
-        switch (self) {
-            .block => |block| try block.toString(buf),
+    pub fn toString(self: *Statement, buf: *String) String.Error!void {
+        switch (self.*) {
+            .block => |*block| try block.toString(buf),
             .let => |let| try let.toString(buf),
             .return_ => |return_| try return_.toString(buf),
             .expressionStatement => |expressionStatement| try expressionStatement.toString(buf),
@@ -56,21 +57,21 @@ pub const Expression = union(enum) {
     hash: Hash,
     macroLiteral: MacroLiteral,
 
-    pub fn toString(self: Expression, buf: *String) String.Error!void {
-        switch (self) {
+    pub fn toString(self: *Expression, buf: *String) String.Error!void {
+        switch (self.*) {
             .identifier => |identifier| try identifier.toString(buf),
             .prefixExpression => |prefixExpression| try prefixExpression.toString(buf),
             .infixExpression => |infixExpression| try infixExpression.toString(buf),
-            .if_ => |if_| try if_.toString(buf),
-            .function => |function| try function.toString(buf),
-            .call => |call| try call.toString(buf),
+            .if_ => |*if_| try if_.toString(buf),
+            .function => |*function| try function.toString(buf),
+            .call => |*call| try call.toString(buf),
             .integer => |integer| try integer.toString(buf),
             .boolean => |boolean| try boolean.toString(buf),
             .stringLiteral => |stringLiteral| try stringLiteral.toString(buf),
-            .array => |array| try array.toString(buf),
+            .array => |*array| try array.toString(buf),
             .index => |index| try index.toString(buf),
-            .hash => |hash| try hash.toString(buf),
-            .macroLiteral => |macroLiteral| try macroLiteral.toString(buf),
+            .hash => |*hash| try hash.toString(buf),
+            .macroLiteral => |*macroLiteral| try macroLiteral.toString(buf),
         }
     }
 };
@@ -79,10 +80,11 @@ pub const Expression = union(enum) {
 pub const Block = struct {
     statements: std.ArrayList(Statement),
 
-    pub fn toString(self: Block, buf: *String) String.Error!void {
+    pub fn toString(self: *Block, buf: *String) String.Error!void {
         try buf.concat("{ ");
-        for (self.statements.items) |statement| {
-            try statement.toString(buf);
+        var i: usize = 0;
+        while (i < self.statements.items.len) : (i += 1) {
+            try self.statements.items[i].toString(buf);
         }
         try buf.concat(" }");
     }
@@ -121,11 +123,13 @@ pub const ExpressionStatement = struct {
 pub const Array = struct {
     elements: std.ArrayList(Expression),
 
-    pub fn toString(self: Array, buf: *String) String.Error!void {
+    pub fn toString(self: *Array, buf: *String) String.Error!void {
         try buf.concat("[");
-        for (self.elements.items) |element, i| {
-            try element.toString(buf);
-            if (i != self.elements.items.len - 1) {
+        const len = self.elements.items.len;
+        var i: usize = 0;
+        while (i < len) : (i += 1) {
+            try self.elements.items[i].toString(buf);
+            if (i != len - 1) {
                 try buf.concat(", ");
             }
         }
@@ -165,12 +169,14 @@ pub const Function = struct {
     body: Block,
     name: []const u8,
 
-    pub fn toString(self: Function, buf: *String) String.Error!void {
+    pub fn toString(self: *Function, buf: *String) String.Error!void {
         try buf.concat("fn");
         try buf.concat("(");
-        for (self.parameters.items) |parameter, i| {
-            try parameter.toString(buf);
-            if (i != self.parameters.items.len - 1) {
+        const len = self.parameters.items.len;
+        var i: usize = 0;
+        while (i < len) : (i += 1) {
+            try self.parameters.items[i].toString(buf);
+            if (i != len - 1) {
                 try buf.concat(", ");
             }
         }
@@ -181,11 +187,13 @@ pub const Function = struct {
 pub const Hash = struct {
     pairs: std.ArrayList(HashPair),
 
-    pub fn toString(self: Hash, buf: *String) String.Error!void {
+    pub fn toString(self: *Hash, buf: *String) String.Error!void {
         try buf.concat("{");
-        for (self.pairs.items) |pair, i| {
-            try pair.toString(buf);
-            if (i != self.pairs.items.len - 1) {
+        const len = self.pairs.items.len;
+        var i: usize = 0;
+        while (i < len) : (i += 1) {
+            try self.pairs.items[i].toString(buf);
+            if (i != len - 1) {
                 try buf.concat(", ");
             }
         }
@@ -197,7 +205,7 @@ pub const HashPair = struct {
     key: Expression,
     value: Expression,
 
-    pub fn toString(self: HashPair, buf: *String) String.Error!void {
+    pub fn toString(self: *HashPair, buf: *String) String.Error!void {
         try self.key.toString(buf);
         try buf.concat(": ");
         try self.value.toString(buf);
@@ -216,12 +224,12 @@ pub const If = struct {
     thenBranch: Block,
     elseBranch: ?Block,
 
-    pub fn toString(self: If, buf: *String) String.Error!void {
+    pub fn toString(self: *If, buf: *String) String.Error!void {
         try buf.concat("if ");
         try self.condition.toString(buf);
         try buf.concat(" ");
         try self.thenBranch.toString(buf);
-        if (self.elseBranch) |elseBranch| {
+        if (self.elseBranch) |*elseBranch| {
             try buf.concat(" else ");
             try elseBranch.toString(buf);
         }
@@ -239,12 +247,14 @@ pub const Call = struct {
         }
     }
 
-    pub fn toString(self: Call, buf: *String) String.Error!void {
+    pub fn toString(self: *Call, buf: *String) String.Error!void {
         try self.callee.toString(buf);
         try buf.concat("(");
-        for (self.arguments.items) |argument, i| {
-            try argument.toString(buf);
-            if (i != self.arguments.items.len - 1) {
+        const len = self.arguments.items.len;
+        var i: usize = 0;
+        while (i < len) : (i += 1) {
+            try self.arguments.items[i].toString(buf);
+            if (i != len - 1) {
                 try buf.concat(", ");
             }
         }
@@ -295,11 +305,13 @@ pub const MacroLiteral = struct {
     parameters: std.ArrayList(Identifier),
     body: Block,
 
-    pub fn toString(self: MacroLiteral, buf: *String) String.Error!void {
+    pub fn toString(self: *MacroLiteral, buf: *String) String.Error!void {
         try buf.concat("macro(");
-        for (self.parameters.items) |parameter, i| {
-            try parameter.toString(buf);
-            if (i != self.parameters.items.len - 1) {
+        const len = self.parameters.items.len;
+        var i: usize = 0;
+        while (i < len) : (i += 1) {
+            try self.parameters.items[i].toString(buf);
+            if (i != len - 1) {
                 try buf.concat(", ");
             }
         }
