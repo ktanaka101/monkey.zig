@@ -59,7 +59,7 @@ fn getOperatorFromToken(token: Token) !ast.Operator {
     };
 }
 
-const Parser = struct {
+pub const Parser = struct {
     lexer: *Lexer,
     currentToken: Token,
     peekToken: Token,
@@ -67,7 +67,7 @@ const Parser = struct {
 
     const Self = @This();
 
-    fn new(lexer: *Lexer, allocator: std.mem.Allocator) Self {
+    pub fn new(lexer: *Lexer, allocator: std.mem.Allocator) Self {
         const currentToken = lexer.nextToken();
         const peekToken = lexer.nextToken();
 
@@ -79,7 +79,7 @@ const Parser = struct {
         self.peekToken = self.lexer.nextToken();
     }
 
-    fn parseProgram(self: *Self) ParserError!ast.Program {
+    pub fn parseProgram(self: *Self) ParserError!ast.Program {
         var statements = std.ArrayList(ast.Statement).init(self.allocator);
 
         while (self.currentToken != Token.eof) {
@@ -586,9 +586,10 @@ test "let statements" {
     {
         try parseProgramForTesting("let x = 5", struct {
             fn function(program: *const ast.Program) !void {
+                var integer = ast.Expression{ .integer = ast.Integer{ .value = 5 } };
                 try expectOneStatementInProgram(&ast.Statement{ .let = ast.Let{
                     .name = ast.Identifier{ .value = "x" },
-                    .value = &ast.Expression{ .integer = ast.Integer{ .value = 5 } },
+                    .value = &integer,
                 } }, program);
             }
         }.function);
@@ -597,10 +598,8 @@ test "let statements" {
     {
         try parseProgramForTesting("let x = 5;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{ .let = ast.Let{
-                    .name = ast.Identifier{ .value = "x" },
-                    .value = &ast.Expression{ .integer = ast.Integer{ .value = 5 } },
-                } }, program);
+                var integer = ast.Expression{ .integer = ast.Integer{ .value = 5 } };
+                try expectOneStatementInProgram(&ast.Statement{ .let = ast.Let{ .name = ast.Identifier{ .value = "x" }, .value = &integer } }, program);
             }
         }.function);
     }
@@ -608,9 +607,10 @@ test "let statements" {
     {
         try parseProgramForTesting("let y = true;", struct {
             fn function(program: *const ast.Program) !void {
+                var boolean = ast.Expression{ .boolean = ast.Boolean{ .value = true } };
                 try expectOneStatementInProgram(&ast.Statement{ .let = ast.Let{
                     .name = ast.Identifier{ .value = "y" },
-                    .value = &ast.Expression{ .boolean = ast.Boolean{ .value = true } },
+                    .value = &boolean,
                 } }, program);
             }
         }.function);
@@ -619,9 +619,10 @@ test "let statements" {
     {
         try parseProgramForTesting("let foobar = y;", struct {
             fn function(program: *const ast.Program) !void {
+                var id = ast.Expression{ .identifier = ast.Identifier{ .value = "y" } };
                 try expectOneStatementInProgram(&ast.Statement{ .let = ast.Let{
                     .name = ast.Identifier{ .value = "foobar" },
-                    .value = &ast.Expression{ .identifier = ast.Identifier{ .value = "y" } },
+                    .value = &id,
                 } }, program);
             }
         }.function);
@@ -632,8 +633,9 @@ test {
     {
         try parseProgramForTesting("return 5", struct {
             fn function(program: *const ast.Program) !void {
+                var integer = ast.Expression{ .integer = ast.Integer{ .value = 5 } };
                 try expectOneStatementInProgram(&ast.Statement{ .return_ = ast.Return{
-                    .value = &ast.Expression{ .integer = ast.Integer{ .value = 5 } },
+                    .value = &integer,
                 } }, program);
             }
         }.function);
@@ -642,8 +644,9 @@ test {
     {
         try parseProgramForTesting("return 5;", struct {
             fn function(program: *const ast.Program) !void {
+                var integer = ast.Expression{ .integer = ast.Integer{ .value = 5 } };
                 try expectOneStatementInProgram(&ast.Statement{ .return_ = ast.Return{
-                    .value = &ast.Expression{ .integer = ast.Integer{ .value = 5 } },
+                    .value = &integer,
                 } }, program);
             }
         }.function);
@@ -652,8 +655,9 @@ test {
     {
         try parseProgramForTesting("return true;", struct {
             fn function(program: *const ast.Program) !void {
+                var boolean = ast.Expression{ .boolean = ast.Boolean{ .value = true } };
                 try expectOneStatementInProgram(&ast.Statement{ .return_ = ast.Return{
-                    .value = &ast.Expression{ .boolean = ast.Boolean{ .value = true } },
+                    .value = &boolean,
                 } }, program);
             }
         }.function);
@@ -662,8 +666,9 @@ test {
     {
         try parseProgramForTesting("return y;", struct {
             fn function(program: *const ast.Program) !void {
+                var id = ast.Expression{ .identifier = ast.Identifier{ .value = "y" } };
                 try expectOneStatementInProgram(&ast.Statement{ .return_ = ast.Return{
-                    .value = &ast.Expression{ .identifier = ast.Identifier{ .value = "y" } },
+                    .value = &id,
                 } }, program);
             }
         }.function);
@@ -673,8 +678,9 @@ test {
 test "identifier expression" {
     try parseProgramForTesting("foobar", struct {
         fn function(program: *const ast.Program) !void {
+            var id = ast.Expression{ .identifier = ast.Identifier{ .value = "foobar" } };
             try expectOneStatementInProgram(&ast.Statement{
-                .expressionStatement = ast.ExpressionStatement{ .expression = &ast.Expression{ .identifier = ast.Identifier{ .value = "foobar" } } },
+                .expressionStatement = ast.ExpressionStatement{ .expression = &id },
             }, program);
         }
     }.function);
@@ -684,8 +690,9 @@ test "integer expression" {
     {
         try parseProgramForTesting("5", struct {
             fn function(program: *const ast.Program) !void {
+                var integer = ast.Expression{ .integer = ast.Integer{ .value = 5 } };
                 try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{ .expression = &ast.Expression{ .integer = ast.Integer{ .value = 5 } } },
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &integer },
                 }, program);
             }
         }.function);
@@ -694,8 +701,9 @@ test "integer expression" {
     {
         try parseProgramForTesting("5;", struct {
             fn function(program: *const ast.Program) !void {
+                var integer = ast.Expression{ .integer = ast.Integer{ .value = 5 } };
                 try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{ .expression = &ast.Expression{ .integer = ast.Integer{ .value = 5 } } },
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &integer },
                 }, program);
             }
         }.function);
@@ -706,8 +714,9 @@ test "boolean expression" {
     {
         try parseProgramForTesting("true", struct {
             fn function(program: *const ast.Program) !void {
+                var boolean = ast.Expression{ .boolean = ast.Boolean{ .value = true } };
                 try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{ .expression = &ast.Expression{ .boolean = ast.Boolean{ .value = true } } },
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &boolean },
                 }, program);
             }
         }.function);
@@ -716,8 +725,9 @@ test "boolean expression" {
     {
         try parseProgramForTesting("true;", struct {
             fn function(program: *const ast.Program) !void {
+                var boolean = ast.Expression{ .boolean = ast.Boolean{ .value = true } };
                 try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{ .expression = &ast.Expression{ .boolean = ast.Boolean{ .value = true } } },
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &boolean },
                 }, program);
             }
         }.function);
@@ -726,8 +736,9 @@ test "boolean expression" {
     {
         try parseProgramForTesting("false;", struct {
             fn function(program: *const ast.Program) !void {
+                var boolean = ast.Expression{ .boolean = ast.Boolean{ .value = false } };
                 try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{ .expression = &ast.Expression{ .boolean = ast.Boolean{ .value = false } } },
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &boolean },
                 }, program);
             }
         }.function);
@@ -738,19 +749,16 @@ test "prefix expression" {
     {
         try parseProgramForTesting("!5", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .prefixExpression = ast.PrefixExpression{
-                                .operator = ast.Operator.bang,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                            },
-                        },
+                var integer = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var prefix = ast.Expression{
+                    .prefixExpression = ast.PrefixExpression{ .operator = ast.Operator.bang, .right = &integer },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &prefix },
                 }, program);
             }
         }.function);
@@ -759,19 +767,16 @@ test "prefix expression" {
     {
         try parseProgramForTesting("!5;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .prefixExpression = ast.PrefixExpression{
-                                .operator = ast.Operator.bang,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                            },
-                        },
+                var integer = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var prefix = ast.Expression{
+                    .prefixExpression = ast.PrefixExpression{ .operator = ast.Operator.bang, .right = &integer },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &prefix },
                 }, program);
             }
         }.function);
@@ -780,19 +785,16 @@ test "prefix expression" {
     {
         try parseProgramForTesting("-15;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .prefixExpression = ast.PrefixExpression{
-                                .operator = ast.Operator.minus,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 15,
-                                    },
-                                },
-                            },
-                        },
+                var integer = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 15,
                     },
+                };
+                var prefix = ast.Expression{
+                    .prefixExpression = ast.PrefixExpression{ .operator = ast.Operator.minus, .right = &integer },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &prefix },
                 }, program);
             }
         }.function);
@@ -801,19 +803,16 @@ test "prefix expression" {
     {
         try parseProgramForTesting("!true;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .prefixExpression = ast.PrefixExpression{
-                                .operator = ast.Operator.bang,
-                                .right = &ast.Expression{
-                                    .boolean = ast.Boolean{
-                                        .value = true,
-                                    },
-                                },
-                            },
-                        },
+                var boolean = ast.Expression{
+                    .boolean = ast.Boolean{
+                        .value = true,
                     },
+                };
+                var prefix = ast.Expression{
+                    .prefixExpression = ast.PrefixExpression{ .operator = ast.Operator.bang, .right = &boolean },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &prefix },
                 }, program);
             }
         }.function);
@@ -822,19 +821,16 @@ test "prefix expression" {
     {
         try parseProgramForTesting("!false;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .prefixExpression = ast.PrefixExpression{
-                                .operator = ast.Operator.bang,
-                                .right = &ast.Expression{
-                                    .boolean = ast.Boolean{
-                                        .value = false,
-                                    },
-                                },
-                            },
-                        },
+                var boolean = ast.Expression{
+                    .boolean = ast.Boolean{
+                        .value = false,
                     },
+                };
+                var prefix = ast.Expression{
+                    .prefixExpression = ast.PrefixExpression{ .operator = ast.Operator.bang, .right = &boolean },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &prefix },
                 }, program);
             }
         }.function);
@@ -845,24 +841,21 @@ test "infix expression" {
     {
         try parseProgramForTesting("5 + 10", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                                .operator = ast.Operator.plus,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 10,
-                                    },
-                                },
-                            },
-                        },
+                var integer1 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var integer2 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 10,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{ .left = &integer1, .operator = ast.Operator.plus, .right = &integer2 },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -871,24 +864,21 @@ test "infix expression" {
     {
         try parseProgramForTesting("5 + 10;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                                .operator = ast.Operator.plus,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 10,
-                                    },
-                                },
-                            },
-                        },
+                var integer1 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var integer2 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 10,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{ .left = &integer1, .operator = ast.Operator.plus, .right = &integer2 },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -897,24 +887,25 @@ test "infix expression" {
     {
         try parseProgramForTesting("5 - 10;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                                .operator = ast.Operator.minus,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 10,
-                                    },
-                                },
-                            },
-                        },
+                var integer1 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var integer2 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 10,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{
+                        .left = &integer1,
+                        .operator = ast.Operator.minus,
+                        .right = &integer2,
+                    },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -923,24 +914,25 @@ test "infix expression" {
     {
         try parseProgramForTesting("5 * 10;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                                .operator = ast.Operator.asterisk,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 10,
-                                    },
-                                },
-                            },
-                        },
+                var integer1 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var integer2 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 10,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{
+                        .left = &integer1,
+                        .operator = ast.Operator.asterisk,
+                        .right = &integer2,
+                    },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -949,24 +941,25 @@ test "infix expression" {
     {
         try parseProgramForTesting("5 / 10;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                                .operator = ast.Operator.slash,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 10,
-                                    },
-                                },
-                            },
-                        },
+                var integer1 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var integer2 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 10,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{
+                        .left = &integer1,
+                        .operator = ast.Operator.slash,
+                        .right = &integer2,
+                    },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -975,24 +968,21 @@ test "infix expression" {
     {
         try parseProgramForTesting("5 > 10;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                                .operator = ast.Operator.gt,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 10,
-                                    },
-                                },
-                            },
-                        },
+                var integer1 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var integer2 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 10,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{ .left = &integer1, .operator = ast.Operator.gt, .right = &integer2 },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -1001,24 +991,25 @@ test "infix expression" {
     {
         try parseProgramForTesting("5 < 10;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                                .operator = ast.Operator.lt,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 10,
-                                    },
-                                },
-                            },
-                        },
+                var integer1 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var integer2 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 10,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{
+                        .left = &integer1,
+                        .operator = ast.Operator.lt,
+                        .right = &integer2,
+                    },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -1027,24 +1018,25 @@ test "infix expression" {
     {
         try parseProgramForTesting("5 == 10;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                                .operator = ast.Operator.equal,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 10,
-                                    },
-                                },
-                            },
-                        },
+                var integer1 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var integer2 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 10,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{
+                        .left = &integer1,
+                        .operator = ast.Operator.equal,
+                        .right = &integer2,
+                    },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -1053,24 +1045,25 @@ test "infix expression" {
     {
         try parseProgramForTesting("5 != 10;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 5,
-                                    },
-                                },
-                                .operator = ast.Operator.notEqual,
-                                .right = &ast.Expression{
-                                    .integer = ast.Integer{
-                                        .value = 10,
-                                    },
-                                },
-                            },
-                        },
+                var integer1 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 5,
                     },
+                };
+                var integer2 = ast.Expression{
+                    .integer = ast.Integer{
+                        .value = 10,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{
+                        .left = &integer1,
+                        .operator = ast.Operator.notEqual,
+                        .right = &integer2,
+                    },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -1079,24 +1072,25 @@ test "infix expression" {
     {
         try parseProgramForTesting("true == true;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .boolean = ast.Boolean{
-                                        .value = true,
-                                    },
-                                },
-                                .operator = ast.Operator.equal,
-                                .right = &ast.Expression{
-                                    .boolean = ast.Boolean{
-                                        .value = true,
-                                    },
-                                },
-                            },
-                        },
+                var boolean1 = ast.Expression{
+                    .boolean = ast.Boolean{
+                        .value = true,
                     },
+                };
+                var boolean2 = ast.Expression{
+                    .boolean = ast.Boolean{
+                        .value = true,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{
+                        .left = &boolean1,
+                        .operator = ast.Operator.equal,
+                        .right = &boolean2,
+                    },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -1105,24 +1099,25 @@ test "infix expression" {
     {
         try parseProgramForTesting("true != false;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .boolean = ast.Boolean{
-                                        .value = true,
-                                    },
-                                },
-                                .operator = ast.Operator.notEqual,
-                                .right = &ast.Expression{
-                                    .boolean = ast.Boolean{
-                                        .value = false,
-                                    },
-                                },
-                            },
-                        },
+                var boolean1 = ast.Expression{
+                    .boolean = ast.Boolean{
+                        .value = true,
                     },
+                };
+                var boolean2 = ast.Expression{
+                    .boolean = ast.Boolean{
+                        .value = false,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{
+                        .left = &boolean1,
+                        .operator = ast.Operator.notEqual,
+                        .right = &boolean2,
+                    },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
@@ -1131,24 +1126,25 @@ test "infix expression" {
     {
         try parseProgramForTesting("false == false;", struct {
             fn function(program: *const ast.Program) !void {
-                try expectOneStatementInProgram(&ast.Statement{
-                    .expressionStatement = ast.ExpressionStatement{
-                        .expression = &ast.Expression{
-                            .infixExpression = ast.InfixExpression{
-                                .left = &ast.Expression{
-                                    .boolean = ast.Boolean{
-                                        .value = false,
-                                    },
-                                },
-                                .operator = ast.Operator.equal,
-                                .right = &ast.Expression{
-                                    .boolean = ast.Boolean{
-                                        .value = false,
-                                    },
-                                },
-                            },
-                        },
+                var boolean1 = ast.Expression{
+                    .boolean = ast.Boolean{
+                        .value = false,
                     },
+                };
+                var boolean2 = ast.Expression{
+                    .boolean = ast.Boolean{
+                        .value = false,
+                    },
+                };
+                var infix = ast.Expression{
+                    .infixExpression = ast.InfixExpression{
+                        .left = &boolean1,
+                        .operator = ast.Operator.equal,
+                        .right = &boolean2,
+                    },
+                };
+                try expectOneStatementInProgram(&ast.Statement{
+                    .expressionStatement = ast.ExpressionStatement{ .expression = &infix },
                 }, program);
             }
         }.function);
