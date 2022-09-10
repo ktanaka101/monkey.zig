@@ -1,6 +1,20 @@
 const std = @import("std");
 const String = @import("string").String;
 
+pub const Node = union(enum) {
+    program: *Program,
+    statement: *Statement,
+    expression: *Expression,
+
+    pub fn toString(self: Node, buf: *String) !void {
+        return switch (self) {
+            .program => try self.program.toString(buf),
+            .statement => try self.statement.toString(buf),
+            .expression => try self.expression.toString(buf),
+        };
+    }
+};
+
 // Root AST
 pub const Program = struct {
     statements: std.ArrayList(Statement),
