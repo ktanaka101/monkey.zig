@@ -32,11 +32,11 @@ pub const Statement = union(enum) {
     return_: Return,
     expressionStatement: ExpressionStatement,
 
-    fn toString(self: Statement, buf: *String) !void {
+    pub fn toString(self: Statement, buf: *String) String.Error!void {
         switch (self) {
-            .block => @panic("unimplments"),
-            .let => @panic("unimplments"),
-            .return_ => @panic("unimplments"),
+            .block => |block| try block.toString(buf),
+            .let => |let| try let.toString(buf),
+            .return_ => |return_| try return_.toString(buf),
             .expressionStatement => |expressionStatement| try expressionStatement.toString(buf),
         }
     }
@@ -56,7 +56,7 @@ pub const Expression = union(enum) {
     hash: Hash,
     macroLiteral: MacroLiteral,
 
-    fn toString(self: Expression, buf: *String) String.Error!void {
+    pub fn toString(self: Expression, buf: *String) String.Error!void {
         switch (self) {
             .identifier => |identifier| try identifier.toString(buf),
             .prefixExpression => |prefixExpression| try prefixExpression.toString(buf),
@@ -79,7 +79,7 @@ pub const Expression = union(enum) {
 pub const Block = struct {
     statements: std.ArrayList(Statement),
 
-    fn toString(self: Block, buf: *String) String.Error!void {
+    pub fn toString(self: Block, buf: *String) String.Error!void {
         try buf.concat("{ ");
         for (self.statements.items) |statement| {
             try statement.toString(buf);
@@ -90,29 +90,29 @@ pub const Block = struct {
 
 pub const Let = struct {
     name: Identifier,
-    value: *const Expression,
+    value: *Expression,
 
-    fn toString(self: Let, buf: *String) String.Error!void {
+    pub fn toString(self: Let, buf: *String) String.Error!void {
         try buf.concat("let ");
         try self.name.toString(buf);
-        try self.concat(" = ");
+        try buf.concat(" = ");
         try self.value.toString(buf);
     }
 };
 
 pub const Return = struct {
-    value: *const Expression,
+    value: *Expression,
 
-    fn toString(self: Return, buf: *String) String.Error!void {
+    pub fn toString(self: Return, buf: *String) String.Error!void {
         try buf.concat("return ");
         try self.value.toString(buf);
     }
 };
 
 pub const ExpressionStatement = struct {
-    expression: *const Expression,
+    expression: *Expression,
 
-    fn toString(self: ExpressionStatement, buf: *String) String.Error!void {
+    pub fn toString(self: ExpressionStatement, buf: *String) String.Error!void {
         try self.expression.toString(buf);
     }
 };
@@ -121,7 +121,7 @@ pub const ExpressionStatement = struct {
 pub const Array = struct {
     elements: std.ArrayList(Expression),
 
-    fn toString(self: Array, buf: *String) String.Error!void {
+    pub fn toString(self: Array, buf: *String) String.Error!void {
         try buf.concat("[");
         for (self.elements.items) |element, i| {
             try element.toString(buf);
@@ -135,7 +135,7 @@ pub const Array = struct {
 pub const Boolean = struct {
     value: bool,
 
-    fn toString(self: Boolean, buf: *String) String.Error!void {
+    pub fn toString(self: Boolean, buf: *String) String.Error!void {
         if (self.value) {
             try buf.concat("true");
         } else {
@@ -146,7 +146,7 @@ pub const Boolean = struct {
 pub const Integer = struct {
     value: i64,
 
-    fn toString(self: Integer, buf: *String) String.Error!void {
+    pub fn toString(self: Integer, buf: *String) String.Error!void {
         var intString = try std.fmt.allocPrint(buf.allocator.*, "{}", .{self.value});
         try buf.concat(intString);
     }
@@ -154,7 +154,7 @@ pub const Integer = struct {
 pub const StringLiteral = struct {
     value: []const u8,
 
-    fn toString(self: StringLiteral, buf: *String) String.Error!void {
+    pub fn toString(self: StringLiteral, buf: *String) String.Error!void {
         try buf.concat("\"");
         try buf.concat(self.value);
         try buf.concat("\"");
@@ -165,7 +165,7 @@ pub const Function = struct {
     body: Block,
     name: []const u8,
 
-    fn toString(self: Function, buf: *String) String.Error!void {
+    pub fn toString(self: Function, buf: *String) String.Error!void {
         try buf.concat("fn");
         try buf.concat("(");
         for (self.parameters.items) |parameter, i| {
@@ -181,7 +181,7 @@ pub const Function = struct {
 pub const Hash = struct {
     pairs: std.ArrayList(HashPair),
 
-    fn toString(self: Hash, buf: *String) String.Error!void {
+    pub fn toString(self: Hash, buf: *String) String.Error!void {
         try buf.concat("{");
         for (self.pairs.items) |pair, i| {
             try pair.toString(buf);
@@ -197,7 +197,7 @@ pub const HashPair = struct {
     key: Expression,
     value: Expression,
 
-    fn toString(self: HashPair, buf: *String) String.Error!void {
+    pub fn toString(self: HashPair, buf: *String) String.Error!void {
         try self.key.toString(buf);
         try buf.concat(": ");
         try self.value.toString(buf);
@@ -206,17 +206,17 @@ pub const HashPair = struct {
 pub const Identifier = struct {
     value: []const u8,
 
-    fn toString(self: Identifier, buf: *String) String.Error!void {
+    pub fn toString(self: Identifier, buf: *String) String.Error!void {
         try buf.concat(self.value);
     }
 };
 
 pub const If = struct {
-    condition: *const Expression,
+    condition: *Expression,
     thenBranch: Block,
     elseBranch: ?Block,
 
-    fn toString(self: If, buf: *String) String.Error!void {
+    pub fn toString(self: If, buf: *String) String.Error!void {
         try buf.concat("if ");
         try self.condition.toString(buf);
         try buf.concat(" ");
@@ -229,10 +229,17 @@ pub const If = struct {
 };
 
 pub const Call = struct {
-    callee: *const Expression,
+    callee: *Expression,
     arguments: std.ArrayList(Expression),
 
-    fn toString(self: Call, buf: *String) String.Error!void {
+    pub fn isQuote(self: Call) bool {
+        switch (self.callee.*) {
+            .identifier => |identifier| return std.mem.eql(u8, identifier.value, "quote"),
+            else => return false,
+        }
+    }
+
+    pub fn toString(self: Call, buf: *String) String.Error!void {
         try self.callee.toString(buf);
         try buf.concat("(");
         for (self.arguments.items) |argument, i| {
@@ -245,10 +252,10 @@ pub const Call = struct {
     }
 };
 pub const Index = struct {
-    left: *const Expression,
-    index: *const Expression,
+    left: *Expression,
+    index: *Expression,
 
-    fn toString(self: Index, buf: *String) String.Error!void {
+    pub fn toString(self: Index, buf: *String) String.Error!void {
         try buf.concat("(");
         try self.left.toString(buf);
         try buf.concat("[");
@@ -258,11 +265,11 @@ pub const Index = struct {
 };
 
 pub const InfixExpression = struct {
-    left: *const Expression,
+    left: *Expression,
     operator: Operator,
-    right: *const Expression,
+    right: *Expression,
 
-    fn toString(self: InfixExpression, buf: *String) String.Error!void {
+    pub fn toString(self: InfixExpression, buf: *String) String.Error!void {
         try buf.concat("(");
         try self.left.toString(buf);
         try buf.concat(" ");
@@ -274,9 +281,9 @@ pub const InfixExpression = struct {
 };
 pub const PrefixExpression = struct {
     operator: Operator,
-    right: *const Expression,
+    right: *Expression,
 
-    fn toString(self: PrefixExpression, buf: *String) String.Error!void {
+    pub fn toString(self: PrefixExpression, buf: *String) String.Error!void {
         try buf.concat("(");
         try buf.concat(self.operator.toString());
         try self.right.toString(buf);
@@ -288,7 +295,7 @@ pub const MacroLiteral = struct {
     parameters: std.ArrayList(Identifier),
     body: Block,
 
-    fn toString(self: MacroLiteral, buf: *String) String.Error!void {
+    pub fn toString(self: MacroLiteral, buf: *String) String.Error!void {
         try buf.concat("macro(");
         for (self.parameters.items) |parameter, i| {
             try parameter.toString(buf);
@@ -313,7 +320,7 @@ pub const Operator = enum {
     lt,
     gt,
 
-    fn toString(self: Operator) []const u8 {
+    pub fn toString(self: Operator) []const u8 {
         return switch (self) {
             .assign => "=",
             .plus => "+",
