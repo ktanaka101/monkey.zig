@@ -26,7 +26,7 @@ Zig: v0.9.1
 - [ ] Windows
 - [ ] Multibyte character
 
-## 🐒Example
+## 🐒 Example
 
 ### REPL
 
