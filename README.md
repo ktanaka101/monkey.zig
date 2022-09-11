@@ -24,8 +24,9 @@ Zig: v0.9.1
 - [x] Linux
 - [x] Mac
 - [ ] Windows
+- [ ] Multibyte character
 
-## Example
+## 🐒Example
 
 ### REPL
 
