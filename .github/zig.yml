@@ -1,17 +1,28 @@
 name: monkey.zig CI
 
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches: [master]
+
 jobs:
   test:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{matrix.os}}
+
     steps:
       - uses: actions/checkout@v2
+
       - uses: goto-bus-stop/setup-zig@v1
         with:
           version: 0.9.1
-      - run: zig build test
+
+      - name: Run tests
+        run: zig build test
+
   lint:
     runs-on: ubuntu-latest
     steps:
