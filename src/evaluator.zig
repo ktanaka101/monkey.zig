@@ -20,7 +20,7 @@ pub const Evaluator = struct {
 
     const Self = @This();
 
-    fn new(allocator: std.mem.Allocator) Self {
+    pub fn new(allocator: std.mem.Allocator) Self {
         return .{
             .allocator = allocator,
         };
