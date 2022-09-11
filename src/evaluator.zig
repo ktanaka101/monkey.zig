@@ -1074,6 +1074,32 @@ test "fibonacci" {
     try testInteger(610, input);
 }
 
+test "retain environment" {
+    var allocator = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer allocator.deinit();
+
+    var env = environment.Environment.new(allocator.allocator());
+
+    {
+        var lexer = Lexer.new("let b = 10;");
+        var parser = Parser.new(&lexer, allocator.allocator());
+        var program = try parser.parseProgram();
+
+        var evaluator = Evaluator.new(allocator.allocator());
+        _ = try evaluator.evalProgram(&program, &env);
+    }
+
+    {
+        var lexer = Lexer.new("b + 20");
+        var parser = Parser.new(&lexer, allocator.allocator());
+        var program = try parser.parseProgram();
+
+        var evaluator = Evaluator.new(allocator.allocator());
+        const resultObject = try evaluator.evalProgram(&program, &env);
+        try expectInteger(30, resultObject);
+    }
+}
+
 // Test utils
 
 fn evalForTesting(expected: anytype, actualInput: []const u8, expecting: fn (anytype, *object.Object) anyerror!void) !void {
