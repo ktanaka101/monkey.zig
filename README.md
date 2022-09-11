@@ -21,6 +21,9 @@ Zig: v0.9.1
 - [ ] Macro
 - [ ] Compiler
 - [ ] VM
+- [x] Linux
+- [x] Mac
+- [ ] Windows
 
 ## Example
 
