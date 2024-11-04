@@ -9,7 +9,7 @@ The Monkey is written in Go in the book, but in this repository it is written in
 
 ## Using Zig Version
 
-Zig: v0.9.1
+Zig: v0.13.0
 
 ## Supports
 
@@ -69,6 +69,12 @@ let fibonacci = fn(x) {
   }
 };
 fibonacci(15); #=> 610
+```
+
+### Run tests
+
+```sh
+$ zig build test --summary all
 ```
 
 ## Contributors
