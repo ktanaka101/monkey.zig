@@ -151,7 +151,7 @@ pub const Integer = struct {
     value: i64,
 
     pub fn toString(self: Integer, buf: *String) String.Error!void {
-        var intString = try std.fmt.allocPrint(buf.allocator.*, "{}", .{self.value});
+        const intString = try std.fmt.allocPrint(buf.allocator, "{}", .{self.value});
         try buf.concat(intString);
     }
 };

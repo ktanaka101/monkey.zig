@@ -23,7 +23,7 @@ const Priority = enum(u4) {
     index = 7,
 
     fn lessThan(self: Priority, other: Priority) bool {
-        return @enumToInt(self) < @enumToInt(other);
+        return @intFromEnum(self) < @intFromEnum(other);
     }
 
     fn fromToken(token: Token) Priority {
@@ -573,7 +573,7 @@ fn expectEqualStringParsedProgram(expected: []const u8, actual: []const u8) !voi
     var parser = Parser.new(&lexer, allocator.allocator());
     var program = try parser.parseProgram();
 
-    var buf = String.init(&allocator.allocator());
+    var buf = String.init(allocator.allocator());
     try program.toString(&buf);
     const ok = buf.cmp(expected);
     if (!ok) {
@@ -1319,8 +1319,8 @@ test "function literal with name" {
             switch (program.*.statements.items[0]) {
                 .let => |let| {
                     switch (let.value.*) {
-                        .function => |function| {
-                            try expectEqualStrings("my_function", function.name);
+                        .function => |func| {
+                            try expectEqualStrings("my_function", func.name);
                         },
                         else => |expression| std.debug.panic("expected let, actual: {}", .{expression}),
                     }
