@@ -52,7 +52,7 @@ pub const BuiltinFunction = enum {
     push,
     puts,
 
-    pub fn call(self: BuiltinFunction, allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) EvaluatorError!*object.Object {
+    pub fn call(self: BuiltinFunction, allocator: std.mem.Allocator, args: std.ArrayList(*object.Object)) EvaluatorError!*object.Object {
         return switch (self) {
             .len => try len(allocator, args),
             .first => try first(allocator, args),
@@ -64,16 +64,16 @@ pub const BuiltinFunction = enum {
     }
 };
 
-fn len(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
+fn len(allocator: std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
     if (try expectArgumentNumber(allocator, 1, args)) |err| {
         return err;
     }
 
     switch (args.items[0].*) {
         .string => |argString| {
-            return util.newInteger(allocator, @intCast(i64, argString.value.len));
+            return util.newInteger(allocator, @intCast(argString.value.len));
         },
-        .array => |argArray| return util.newInteger(allocator, @intCast(i64, argArray.items.items.len)),
+        .array => |argArray| return util.newInteger(allocator, @intCast(argArray.items.items.len)),
         else => return util.newError(
             allocator,
             "argument to 'len' not supported, got {s}",
@@ -82,7 +82,7 @@ fn len(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*obj
     }
 }
 
-fn first(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
+fn first(allocator: std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
     if (try expectArgumentNumber(allocator, 1, args)) |err| {
         return err;
     }
@@ -103,7 +103,7 @@ fn first(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*o
     }
 }
 
-fn last(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
+fn last(allocator: std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
     if (try expectArgumentNumber(allocator, 1, args)) |err| {
         return err;
     }
@@ -124,7 +124,7 @@ fn last(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*ob
     }
 }
 
-fn rest(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
+fn rest(allocator: std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
     if (try expectArgumentNumber(allocator, 1, args)) |err| {
         return err;
     }
@@ -135,7 +135,7 @@ fn rest(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*ob
                 return &NULL_OBJECT;
             }
 
-            var newItems = std.ArrayList(*object.Object).init(allocator.*);
+            var newItems = std.ArrayList(*object.Object).init(allocator);
             var i: usize = 1;
             while (i < argArray.items.items.len) : (i += 1) {
                 newItems.append(argArray.items.items[i]) catch return EvaluatorError.MemoryAllocation;
@@ -151,14 +151,14 @@ fn rest(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*ob
     }
 }
 
-fn push(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
+fn push(allocator: std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
     if (try expectArgumentNumber(allocator, 2, args)) |err| {
         return err;
     }
 
     switch (args.items[0].*) {
         .array => |argArray| {
-            var newItems = std.ArrayList(*object.Object).init(allocator.*);
+            var newItems = std.ArrayList(*object.Object).init(allocator);
             var i: usize = 0;
             while (i < argArray.items.items.len) : (i += 1) {
                 newItems.append(argArray.items.items[i]) catch return EvaluatorError.MemoryAllocation;
@@ -175,7 +175,7 @@ fn push(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*ob
     }
 }
 
-fn puts(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
+fn puts(allocator: std.mem.Allocator, args: std.ArrayList(*object.Object)) !*object.Object {
     var buffer = string.String.init(allocator);
     var i: usize = 0;
     while (i < args.items.len) : (i += 1) {
@@ -186,7 +186,7 @@ fn puts(allocator: *std.mem.Allocator, args: std.ArrayList(*object.Object)) !*ob
     return &NULL_OBJECT;
 }
 
-fn expectArgumentNumber(allocator: *std.mem.Allocator, expect: usize, args: std.ArrayList(*object.Object)) !?*object.Object {
+fn expectArgumentNumber(allocator: std.mem.Allocator, expect: usize, args: std.ArrayList(*object.Object)) !?*object.Object {
     if (args.items.len != expect) {
         return try util.newError(
             allocator,

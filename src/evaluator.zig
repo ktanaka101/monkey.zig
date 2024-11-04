@@ -70,7 +70,7 @@ pub const Evaluator = struct {
                     else => {},
                 }
 
-                var objectPtr = self.allocator.create(object.Object) catch return EvaluatorError.MemoryAllocation;
+                const objectPtr = self.allocator.create(object.Object) catch return EvaluatorError.MemoryAllocation;
                 objectPtr.* = object.Object{
                     .return_ = object.Return{
                         .value = value,
@@ -83,8 +83,8 @@ pub const Evaluator = struct {
 
     fn evalExpression(self: *Self, expression: *ast.Expression, env: *environment.Environment) EvaluatorError!*object.Object {
         switch (expression.*) {
-            .integer => |integer| return try util.newInteger(&self.*.allocator, integer.value),
-            .stringLiteral => |str| return try util.newString(&self.*.allocator, str.value),
+            .integer => |integer| return try util.newInteger(self.*.allocator, integer.value),
+            .stringLiteral => |str| return try util.newString(self.*.allocator, str.value),
             .boolean => |boolean| return nativeBoolToBooleanObject(boolean.value),
             .array => |*array| {
                 var elements = std.ArrayList(*object.Object).init(self.*.allocator);
@@ -98,7 +98,7 @@ pub const Evaluator = struct {
 
                     elements.append(evaled) catch return EvaluatorError.MemoryAllocation;
                 }
-                return try util.newArray(&self.*.allocator, elements);
+                return try util.newArray(self.*.allocator, elements);
             },
             .index => |index| {
                 const left = try self.evalExpression(index.left, env);
@@ -142,7 +142,7 @@ pub const Evaluator = struct {
                 return try self.evalInfixExpression(&infixExpression.operator, left, right);
             },
             .if_ => |*if_| return try self.evalIfExpression(if_, env),
-            .function => |*function| return util.newFunction(&self.allocator, function.parameters, &function.body, env),
+            .function => |*function| return util.newFunction(self.allocator, function.parameters, &function.body, env),
             .call => |*call| {
                 const function = try self.evalExpression(call.callee, env);
                 switch (function.*) {
@@ -186,14 +186,14 @@ pub const Evaluator = struct {
         switch (operator) {
             .bang => return evalBangOperatorExpression(right),
             .minus => return try self.evalMinusPrefixOperatorExpression(right),
-            else => return util.newError(&self.allocator, "unknown operator: {s}{s}", .{ operator.toString(), right.typeName() }),
+            else => return util.newError(self.allocator, "unknown operator: {s}{s}", .{ operator.toString(), right.typeName() }),
         }
     }
 
     fn evalMinusPrefixOperatorExpression(self: *Self, right: *object.Object) EvaluatorError!*object.Object {
         switch (right.*) {
-            .integer => |integer| return try util.newInteger(&self.allocator, -integer.value),
-            else => return util.newError(&self.allocator, "unknown operator: -{s}", .{right.typeName()}),
+            .integer => |integer| return try util.newInteger(self.allocator, -integer.value),
+            else => return util.newError(self.allocator, "unknown operator: -{s}", .{right.typeName()}),
         }
     }
 
@@ -203,7 +203,7 @@ pub const Evaluator = struct {
                 switch (right.*) {
                     .integer => |rightInteger| return try self.evalIntegerInfixExpression(operator, &leftInteger, &rightInteger),
                     else => return util.newError(
-                        &self.allocator,
+                        self.allocator,
                         "type mismatch: {s} {s} {s}",
                         .{ left.typeName(), operator.toString(), right.typeName() },
                     ),
@@ -213,7 +213,7 @@ pub const Evaluator = struct {
                 switch (right.*) {
                     .string => |rightString| return try self.evalStringInfixExpression(operator, &leftString, &rightString),
                     else => return try util.newError(
-                        &self.allocator,
+                        self.allocator,
                         "type mismatch: {s} {s} {s}",
                         .{ left.typeName(), operator.toString(), right.typeName() },
                     ),
@@ -226,13 +226,13 @@ pub const Evaluator = struct {
                     else => {
                         if (std.mem.eql(u8, @tagName(left.*), @tagName(right.*))) {
                             return try util.newError(
-                                &self.allocator,
+                                self.allocator,
                                 "unknown operator: {s} {s} {s}",
                                 .{ left.typeName(), operator.toString(), right.typeName() },
                             );
                         } else {
                             return try util.newError(
-                                &self.allocator,
+                                self.allocator,
                                 "type mismatch: {s} {s} {s}",
                                 .{ left.typeName(), operator.toString(), right.typeName() },
                             );
@@ -306,24 +306,24 @@ pub const Evaluator = struct {
                     else => return false,
                 }
             },
-            .function => return @ptrToInt(obj1) == @ptrToInt(obj2),
-            .builtinFunction => return @ptrToInt(obj1) == @ptrToInt(obj2),
+            .function => return @intFromPtr(obj1) == @intFromPtr(obj2),
+            .builtinFunction => return @intFromPtr(obj1) == @intFromPtr(obj2),
             else => @panic("Unsupported comparison."),
         }
     }
 
     fn evalIntegerInfixExpression(self: *Self, operator: *const ast.Operator, left: *const object.Integer, right: *const object.Integer) EvaluatorError!*object.Object {
         switch (operator.*) {
-            .plus => return util.newInteger(&self.allocator, left.*.value + right.*.value),
-            .minus => return util.newInteger(&self.allocator, left.*.value - right.*.value),
-            .asterisk => return util.newInteger(&self.allocator, left.*.value * right.*.value),
-            .slash => return util.newInteger(&self.allocator, @divFloor(left.*.value, right.*.value)),
+            .plus => return util.newInteger(self.allocator, left.*.value + right.*.value),
+            .minus => return util.newInteger(self.allocator, left.*.value - right.*.value),
+            .asterisk => return util.newInteger(self.allocator, left.*.value * right.*.value),
+            .slash => return util.newInteger(self.allocator, @divFloor(left.*.value, right.*.value)),
             .lt => return nativeBoolToBooleanObject(left.*.value < right.*.value),
             .gt => return nativeBoolToBooleanObject(left.*.value > right.*.value),
             .equal => return nativeBoolToBooleanObject(left.*.value == right.*.value),
             .notEqual => return nativeBoolToBooleanObject(left.*.value != right.*.value),
             else => return util.newError(
-                &self.allocator,
+                self.allocator,
                 "unknown operator: Integer {s} Integer",
                 .{operator.toString()},
             ),
@@ -337,8 +337,8 @@ pub const Evaluator = struct {
                 const rightLength = right.*.value.len;
                 const combinedLength = leftLength + rightLength;
                 const combined = self.allocator.alloc(u8, combinedLength) catch return EvaluatorError.MemoryAllocation;
-                std.mem.copy(u8, combined[0..leftLength], left.*.value);
-                std.mem.copy(u8, combined[leftLength..combinedLength], right.*.value);
+                std.mem.copyForwards(u8, combined[0..leftLength], left.*.value);
+                std.mem.copyForwards(u8, combined[leftLength..combinedLength], right.*.value);
 
                 const objectPtr = self.allocator.create(object.Object) catch return EvaluatorError.MemoryAllocation;
                 objectPtr.* = object.Object{
@@ -347,7 +347,7 @@ pub const Evaluator = struct {
                 return objectPtr;
             },
             else => return util.newError(
-                &self.allocator,
+                self.allocator,
                 "unknown operator: String {s} String",
                 .{operator.toString()},
             ),
@@ -389,7 +389,7 @@ pub const Evaluator = struct {
         } else if (std.mem.eql(u8, identifier.*.value, "puts")) {
             return &builtin.BUILTIN_FUNCTION_PUTS_OBJECT;
         } else {
-            return util.newError(&self.allocator, "identifier not found: {s}", .{identifier.*.value});
+            return util.newError(self.allocator, "identifier not found: {s}", .{identifier.*.value});
         }
     }
 
@@ -398,18 +398,18 @@ pub const Evaluator = struct {
             .function => |*func| {
                 if (func.parameters.items.len != arguments.items.len) {
                     return util.newError(
-                        &self.allocator,
+                        self.allocator,
                         "wrong number of arguments: want={}, got={}",
                         .{ func.parameters.items.len, arguments.items.len },
                     );
                 }
 
-                var extendedEnv = try self.extendFunctionEnv(func, arguments);
+                const extendedEnv = try self.extendFunctionEnv(func, arguments);
                 const evaluated = try self.evalBlock(func.body, extendedEnv);
                 return unwrapReturnValue(evaluated);
             },
-            .builtinFunction => |builtinFunction| return try builtinFunction.call(&self.allocator, arguments),
-            else => return util.newError(&self.allocator, "not a function: {s}", .{function.typeName()}),
+            .builtinFunction => |builtinFunction| return try builtinFunction.call(self.allocator, arguments),
+            else => return util.newError(self.allocator, "not a function: {s}", .{function.typeName()}),
         }
     }
 
@@ -429,11 +429,11 @@ pub const Evaluator = struct {
             .array => |array| {
                 switch (index.*) {
                     .integer => |indexInteger| return try self.evalArrayIndexExpression(&array, &indexInteger),
-                    else => return try util.newError(&self.allocator, "index operator not supported: {s}", .{index.typeName()}),
+                    else => return try util.newError(self.allocator, "index operator not supported: {s}", .{index.typeName()}),
                 }
             },
             .hash => |hash| return try self.evalHashIndexExpression(&hash, index),
-            else => return try util.newError(&self.allocator, "index operator not supported: {s}", .{left.typeName()}),
+            else => return try util.newError(self.allocator, "index operator not supported: {s}", .{left.typeName()}),
         }
     }
 
@@ -443,7 +443,7 @@ pub const Evaluator = struct {
             return &builtin.NULL_OBJECT;
         }
 
-        const idx = @intCast(usize, index.*.value);
+        const idx: usize = @intCast(index.*.value);
         return array.*.items.items[idx];
     }
 
@@ -483,7 +483,7 @@ pub const Evaluator = struct {
     }
 
     fn evalHashIndexExpression(self: *Self, hash: *const object.Hash, index: *const object.Object) EvaluatorError!*object.Object {
-        var hashKey = convertToHashableFromObject(index.*);
+        const hashKey = convertToHashableFromObject(index.*);
         if (hashKey) |key| {
             if (hash.*.get(key)) |value| {
                 return value;
@@ -491,7 +491,7 @@ pub const Evaluator = struct {
                 return &builtin.NULL_OBJECT;
             }
         } else {
-            return try util.newError(&self.allocator, "unusable as hash key: {s}", .{index.typeName()});
+            return try util.newError(self.allocator, "unusable as hash key: {s}", .{index.typeName()});
         }
     }
 
@@ -710,14 +710,14 @@ test "eval function object" {
     try evalForTesting(null, "fn(x) { x + 2; };", struct {
         fn function(_: anytype, actual: *object.Object) !void {
             switch (actual.*) {
-                .function => |*function| {
-                    try std.testing.expectEqual(@as(usize, 1), function.parameters.items.len);
-                    try std.testing.expectEqualStrings("x", function.parameters.items[0].value);
-                    var allocator = std.heap.page_allocator;
-                    var buf = string.String.init(&allocator);
+                .function => |*func| {
+                    try std.testing.expectEqual(@as(usize, 1), func.parameters.items.len);
+                    try std.testing.expectEqualStrings("x", func.parameters.items[0].value);
+                    const allocator = std.heap.page_allocator;
+                    var buf = string.String.init(allocator);
                     defer buf.deinit();
 
-                    try function.body.toString(&buf);
+                    try func.body.toString(&buf);
                     try std.testing.expectEqualStrings("{ (x + 2) }", buf.str());
                 },
                 else => return error.TypeMismatch,
@@ -975,8 +975,8 @@ test "return null when index out of range in array" {
 }
 
 fn _testHashIndex(expected: i64, actualBase: []const u8, actual: []const u8) !void {
-    var allocator = std.heap.page_allocator;
-    var input = string.String.init(&allocator);
+    const allocator = std.heap.page_allocator;
+    var input = string.String.init(allocator);
     defer input.deinit();
     try input.concat(actualBase);
     try input.concat("[");

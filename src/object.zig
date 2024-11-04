@@ -82,7 +82,7 @@ pub const Integer = struct {
     }
 
     pub fn toString(self: Integer, buf: *string.String) string.String.Error!void {
-        var intString = try std.fmt.allocPrint(buf.allocator.*, "{}", .{self.value});
+        const intString = try std.fmt.allocPrint(buf.allocator, "{}", .{self.value});
         try buf.concat(intString);
     }
 };
@@ -110,7 +110,7 @@ pub const String = struct {
 pub const BuiltinFunction = struct {
     function: builtin.BuiltinFunction,
 
-    pub fn call(self: BuiltinFunction, allocator: *std.mem.Allocator, args: std.ArrayList(*Object)) !*Object {
+    pub fn call(self: BuiltinFunction, allocator: std.mem.Allocator, args: std.ArrayList(*Object)) !*Object {
         return try self.function.call(allocator, args);
     }
 

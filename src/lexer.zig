@@ -296,7 +296,7 @@ fn expectStringLiteral(expected: []const u8, actual: token.Token) !void {
 }
 
 test "lexer" {
-    var input =
+    const input =
         \\ let five = 5;
         \\ let ten = 10;
         \\ 

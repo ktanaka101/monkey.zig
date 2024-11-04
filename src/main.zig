@@ -17,7 +17,7 @@ pub fn main() anyerror!void {
 
     var rootAllocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer rootAllocator.deinit();
-    var allocator = rootAllocator.allocator();
+    const allocator = rootAllocator.allocator();
 
     var env = Environment.new(allocator);
     var evaluator = Evaluator.new(allocator);
@@ -48,7 +48,7 @@ pub fn main() anyerror!void {
                     try stdout.print("Error: {s}\n", .{error_.message});
                 },
                 else => {
-                    var objPrintBuf = String.init(&allocator);
+                    var objPrintBuf = String.init(allocator);
                     try object.toString(&objPrintBuf);
                     try stdout.print("{s}\n", .{objPrintBuf.str()});
                 },
