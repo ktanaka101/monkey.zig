@@ -1,0 +1,16 @@
+.{
+    .name = "monky-zig",
+    .version = "0.2.0",
+    .minimum_zig_version = "0.13.0",
+
+    .dependencies = .{
+        .string = .{
+            .url = "https://github.com/JakubSzark/zig-string/archive/refs/heads/master.tar.gz",
+            .hash = "122047e740a48165ed1cdd10b8c595cb5b37d2ae2128364957ba0a8de5c7dc396adf",
+        },
+    },
+
+    .paths = .{
+        "",
+    },
+}
